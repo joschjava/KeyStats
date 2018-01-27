@@ -21,6 +21,7 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 
 	
 	public static void main(String[] args) {
+		
 			try {
 				GlobalScreen.registerNativeHook();
 			} catch (NativeHookException e) {
