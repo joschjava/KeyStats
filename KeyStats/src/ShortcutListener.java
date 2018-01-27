@@ -1,6 +1,10 @@
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FileUtils;
 import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyEvent;
@@ -16,9 +20,20 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 	 * https://stackoverflow.com/questions/4167664/ability-to-click-through-a-java-app
 	 */
 	
+	/** After how many strokes write to file */
+	private final int SAVE_TIMES = 10;
+	
+	/** After how many mouse clicks save to file */
+	private int SAVE_TIMES_MOUSE = 10;
+	
 	private int keyDown = -1;
 	private int mouseClicks = 0;
+	private int[] list = new int[SAVE_TIMES];
+	private int listcounter = 0;
 
+
+
+	
 	
 	public static void main(String[] args) {
 		
@@ -35,14 +50,47 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 			logger.setLevel(Level.OFF);
 	}
 
+	private void addKey(int key) {
+		list[listcounter++] = key;
+		if(listcounter==list.length) {
+			StringBuilder output = new StringBuilder();
+			for (int i = 0; i < list.length; i++) {
+				output.append(String.valueOf(list[i])+";");
+			}
+			output.append("\r\n");
+			try {
+				FileUtils.writeStringToFile(new File("log.txt"), output.toString(), (Charset) null, true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			listcounter = 0;
+		}
+	}
+	
+	private void addMouseClick() {
+		mouseClicks++;
+		if(mouseClicks%SAVE_TIMES_MOUSE == 0) {
+			try {
+				FileUtils.writeStringToFile(new File("mouse.txt"), String.valueOf(mouseClicks), (Charset) null);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
 	@Override
 	public void nativeKeyPressed(NativeKeyEvent e) {
 		if(e.getRawCode() != keyDown) {
 			System.out.println(NativeKeyEvent.getKeyText(e.getKeyCode())+" ("+e.getKeyCode()+", "+e.getRawCode()+")" );
+			addKey(e.getRawCode());
 			keyDown = e.getRawCode();
 		}
 	}
 
+	
+	
 	@Override
 	public void nativeKeyReleased(NativeKeyEvent arg0) {
 		keyDown = -1;
@@ -55,14 +103,13 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 
 	@Override
 	public void nativeMouseClicked(NativeMouseEvent arg0) {
-		System.out.println();
 		
 	}
 
 	@Override
 	public void nativeMousePressed(NativeMouseEvent arg0) {
-		mouseClicks++;
 		System.out.println(mouseClicks);
+		addMouseClick();
 	}
 
 	@Override
