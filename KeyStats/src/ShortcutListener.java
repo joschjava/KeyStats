@@ -112,6 +112,7 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 			for (int i = 0; i < list.length; i++) {
 				output.append(String.valueOf(list[i])+SPLIT_CHAR);
 			}
+			
 			output.append("\r\n");
 			try {
 				FileUtils.writeStringToFile(new File("log.txt"), output.toString(), (Charset) null, true);
