@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,36 +28,89 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 	/** After how many mouse clicks save to file */
 	private int SAVE_TIMES_MOUSE = 10;
 	
+	private String KEYS_FILE = "log.txt";
+	private String MOUSE_FILE = "mouse.txt";
+	
 	private int keyDown = -1;
 	private int mouseClicks = 0;
 	private int[] list = new int[SAVE_TIMES];
 	private int listcounter = 0;
 
-
+	private String SPLIT_CHAR = ";";
 
 	
 	
 	public static void main(String[] args) {
 		
-			try {
-				GlobalScreen.registerNativeHook();
-			} catch (NativeHookException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+
 			ShortcutListener sl = new ShortcutListener();
-			GlobalScreen.addNativeKeyListener(sl);
-			GlobalScreen.addNativeMouseListener(sl);
-			Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-			logger.setLevel(Level.OFF);
+			sl.readSavedKeysFromFile();
+			
+			
+//			startLogging(sl);
 	}
 
+	/**
+	 * Starts logging keyboard and mouse clicks
+	 * @param sl
+	 */
+	private static void startLogging(ShortcutListener sl) {
+		try {
+			GlobalScreen.registerNativeHook();
+		} catch (NativeHookException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		GlobalScreen.addNativeKeyListener(sl);
+//		GlobalScreen.addNativeMouseListener(sl);
+		Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+		logger.setLevel(Level.OFF);
+	}
+
+	public void readSavedKeysFromFile() {
+		File keys = new File(KEYS_FILE);
+		String rawText = "";
+		try {
+			rawText = FileUtils.readFileToString(keys, (Charset)null);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//Only allow numbers and Split
+		rawText = rawText.replaceAll("[^0-9|"+SPLIT_CHAR+"]","");
+
+		String[] numbersString = rawText.split(SPLIT_CHAR);
+		int[] numbers = new int[numbersString.length];
+		
+		for (int i = 0; i < numbers.length; i++) {
+			numbers[i] = Integer.valueOf(numbersString[i]);
+		}
+
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int key : numbers) {
+            if (map.containsKey(key)) {
+                int occurrence = map.get(key);
+                occurrence++;
+                map.put(key, occurrence);
+            } else {
+                map.put(key, 1);
+            }
+        }
+
+        for (Integer key : map.keySet()) {
+            int occurrence = map.get(key);
+            System.out.println(KeyboardMap.getKey(key) + ";" + occurrence);
+        }
+    
+
+	}
+	
 	private void addKey(int key) {
 		list[listcounter++] = key;
 		if(listcounter==list.length) {
 			StringBuilder output = new StringBuilder();
 			for (int i = 0; i < list.length; i++) {
-				output.append(String.valueOf(list[i])+";");
+				output.append(String.valueOf(list[i])+SPLIT_CHAR);
 			}
 			output.append("\r\n");
 			try {
@@ -83,7 +138,11 @@ public class ShortcutListener implements NativeKeyListener, NativeMouseInputList
 	@Override
 	public void nativeKeyPressed(NativeKeyEvent e) {
 		if(e.getRawCode() != keyDown) {
-			System.out.println(NativeKeyEvent.getKeyText(e.getKeyCode())+" ("+e.getKeyCode()+", "+e.getRawCode()+")" );
+//			System.out.println(NativeKeyEvent.getKeyText(e.getKeyCode())+" ("+e.getKeyCode()+", "+e.getRawCode()+")" );
+//			System.out.println("map.put("+e.getRawCode()+", \""+NativeKeyEvent.getKeyText(e.getKeyCode())+"\");" );
+			
+//			System.out.print("\";\nraw["+tempCounter+"] = "+e.getRawCode()+";\nkey["+(tempCounter+1)+"] = \"");
+
 			addKey(e.getRawCode());
 			keyDown = e.getRawCode();
 		}
